@@ -1,7 +1,9 @@
 import defu from "defu";
 import {
   type H3Event,
+  appendResponseHeader,
   eventHandler,
+  getHeader,
   proxyRequest,
   sendRedirect,
   setHeaders,
@@ -16,6 +18,8 @@ const _routeRulesMatcher = toRouteMatcher(
   createRadixRouter({ routes: config.nitro.routeRules })
 );
 
+const redirectedHeader = "x-nitro-redirect"
+const proxiedHeader = "x-nitro-proxy"
 export function createRouteRulesHandler(ctx: {
   localFetch: typeof globalThis.fetch;
 }) {
@@ -26,8 +30,10 @@ export function createRouteRulesHandler(ctx: {
     if (routeRules.headers) {
       setHeaders(event, routeRules.headers);
     }
+    const isRedirected = !!getHeader(event, redirectedHeader)
+    const isProxied = !!getHeader(event, proxiedHeader)
     // Apply redirect options
-    if (routeRules.redirect) {
+    if (!isRedirected && routeRules.redirect) {
       let target = routeRules.redirect.to;
       if (target.endsWith("/**")) {
         let targetPath = event.path;
@@ -40,10 +46,11 @@ export function createRouteRulesHandler(ctx: {
         const query = getQuery(event.path);
         target = withQuery(target, query);
       }
+      appendResponseHeader(event, redirectedHeader, "true");
       return sendRedirect(event, target, routeRules.redirect.statusCode);
     }
     // Apply proxy options
-    if (routeRules.proxy) {
+    if (!isProxied && routeRules.proxy) {
       let target = routeRules.proxy.to;
       if (target.endsWith("/**")) {
         let targetPath = event.path;
@@ -58,6 +65,9 @@ export function createRouteRulesHandler(ctx: {
       }
       return proxyRequest(event, target, {
         fetch: ctx.localFetch,
+        headers: {
+          [proxiedHeader]: "true",
+        },
         ...routeRules.proxy,
       });
     }
@@ -78,8 +88,8 @@ export function getRouteRules(event: H3Event): NitroRouteRules {
 type DeepReadonly<T> = T extends Record<string, any>
   ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
   : T extends Array<infer U>
-    ? ReadonlyArray<DeepReadonly<U>>
-    : T;
+  ? ReadonlyArray<DeepReadonly<U>>
+  : T;
 
 /**
  * @param path - The path to match against route rules. This should not contain a query string.

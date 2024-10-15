@@ -1,8 +1,7 @@
 {
-  "name": "nitro",
+  "name": "@ourongxing/nitro",
   "version": "3.0.0",
   "description": "Build and Deploy Universal JavaScript Servers",
-  "repository": "unjs/nitro",
   "license": "MIT",
   "type": "module",
   "exports": {
