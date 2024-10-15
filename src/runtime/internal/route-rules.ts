@@ -1,12 +1,14 @@
 import defu from "defu";
 import {
   type H3Event,
+  appendResponseHeader,
   eventHandler,
+  getHeader,
   proxyRequest,
   sendRedirect,
   setHeaders,
 } from "h3";
-import type { NitroRouteRules } from "nitropack/types";
+import type { NitroRouteRules } from "nitro/types";
 import { createRouter as createRadixRouter, toRouteMatcher } from "radix3";
 import { getQuery, joinURL, withQuery, withoutBase } from "ufo";
 import { useRuntimeConfig } from "./config";
@@ -16,9 +18,12 @@ const _routeRulesMatcher = toRouteMatcher(
   createRadixRouter({ routes: config.nitro.routeRules })
 );
 
+// don't redirect and proxy
+const goHeader = "x-nitro-go"
 export function createRouteRulesHandler(ctx: {
   localFetch: typeof globalThis.fetch;
 }) {
+  // Will merge all rules
   return eventHandler((event) => {
     // Match route options against path
     const routeRules = getRouteRules(event);
@@ -26,40 +31,47 @@ export function createRouteRulesHandler(ctx: {
     if (routeRules.headers) {
       setHeaders(event, routeRules.headers);
     }
-    // Apply redirect options
-    if (routeRules.redirect) {
-      let target = routeRules.redirect.to;
-      if (target.endsWith("/**")) {
-        let targetPath = event.path;
-        const strpBase = (routeRules.redirect as any)._redirectStripBase;
-        if (strpBase) {
-          targetPath = withoutBase(targetPath, strpBase);
+    const goAhead = !!routeRules.headers?.[goHeader] || getHeader(event, goHeader)
+    if (!goAhead) {
+      // Apply redirect options
+      if (routeRules.redirect) {
+        let target = routeRules.redirect.to;
+        if (target.endsWith("/**")) {
+          let targetPath = event.path;
+          const strpBase = (routeRules.redirect as any)._redirectStripBase;
+          if (strpBase) {
+            targetPath = withoutBase(targetPath, strpBase);
+          }
+          target = joinURL(target.slice(0, -3), targetPath);
+        } else if (event.path.includes("?")) {
+          const query = getQuery(event.path);
+          target = withQuery(target, query);
         }
-        target = joinURL(target.slice(0, -3), targetPath);
-      } else if (event.path.includes("?")) {
-        const query = getQuery(event.path);
-        target = withQuery(target, query);
+        appendResponseHeader(event, goHeader, "true");
+        return sendRedirect(event, target, routeRules.redirect.statusCode);
       }
-      return sendRedirect(event, target, routeRules.redirect.statusCode);
-    }
-    // Apply proxy options
-    if (routeRules.proxy) {
-      let target = routeRules.proxy.to;
-      if (target.endsWith("/**")) {
-        let targetPath = event.path;
-        const strpBase = (routeRules.proxy as any)._proxyStripBase;
-        if (strpBase) {
-          targetPath = withoutBase(targetPath, strpBase);
+      // Apply proxy options
+      if (routeRules.proxy) {
+        let target = routeRules.proxy.to;
+        if (target.endsWith("/**")) {
+          let targetPath = event.path;
+          const strpBase = (routeRules.proxy as any)._proxyStripBase;
+          if (strpBase) {
+            targetPath = withoutBase(targetPath, strpBase);
+          }
+          target = joinURL(target.slice(0, -3), targetPath);
+        } else if (event.path.includes("?")) {
+          const query = getQuery(event.path);
+          target = withQuery(target, query);
         }
-        target = joinURL(target.slice(0, -3), targetPath);
-      } else if (event.path.includes("?")) {
-        const query = getQuery(event.path);
-        target = withQuery(target, query);
+        return proxyRequest(event, target, {
+          fetch: ctx.localFetch,
+          headers: {
+            [goHeader]: "true",
+          },
+          ...routeRules.proxy,
+        });
       }
-      return proxyRequest(event, target, {
-        fetch: ctx.localFetch,
-        ...routeRules.proxy,
-      });
     }
   });
 }
@@ -78,8 +90,8 @@ export function getRouteRules(event: H3Event): NitroRouteRules {
 type DeepReadonly<T> = T extends Record<string, any>
   ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
   : T extends Array<infer U>
-    ? ReadonlyArray<DeepReadonly<U>>
-    : T;
+  ? ReadonlyArray<DeepReadonly<U>>
+  : T;
 
 /**
  * @param path - The path to match against route rules. This should not contain a query string.

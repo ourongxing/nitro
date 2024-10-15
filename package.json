@@ -1,6 +1,6 @@
 {
-  "name": "nitropack",
-  "version": "2.9.6",
+  "name": "@ourongxing/nitropack",
+  "version": "2.9.6-beta.1",
   "description": "Build and Deploy Universal JavaScript Servers",
   "repository": "unjs/nitro",
   "license": "MIT",
