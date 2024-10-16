@@ -189,21 +189,29 @@ function generateBuildConfig(nitro: Nitro) {
     // If we are using an ISR function for /, then we need to write this explicitly
     ...(nitro.options.routeRules["/"]?.isr
       ? [
-          {
-            src: "(?<url>/)",
-            dest: "/__nitro-index?url=$url",
-          },
-        ]
+        {
+          src: "(?<url>/)",
+          dest: "/__nitro-index?url=$url",
+        },
+      ]
       : []),
     // If we are using an ISR function as a fallback, then we do not need to output the below fallback route as well
     ...(nitro.options.routeRules["/**"]?.isr
       ? []
       : [
-          {
-            src: "/(.*)",
-            dest: "/__nitro",
-          },
-        ])
+        // {
+        //   src: "/(.*)",
+        //   dest: "/__nitro",
+        // },
+        {
+          "src": "/api/(.*)",
+          "dest": "/__nitro"
+        },
+        {
+          "src": "/(.*)",
+          "dest": "/"
+        }
+      ])
   );
 
   return config;
@@ -215,7 +223,7 @@ function generateEndpoint(url: string) {
   }
   return url.includes("/**")
     ? "/__nitro-" +
-        withoutLeadingSlash(url.replace(/\/\*\*.*/, "").replace(/[^a-z]/g, "-"))
+    withoutLeadingSlash(url.replace(/\/\*\*.*/, "").replace(/[^a-z]/g, "-"))
     : url;
 }
 
