@@ -43,7 +43,6 @@ export default defineBuildConfig({
   ],
   alias: {
     nitropack: "nitropack",
-    "nitropack/meta": resolve(srcDir, "../meta.ts"),
     "nitropack/runtime/meta": resolve(srcDir, "../runtime-meta.mjs"),
     ...Object.fromEntries(
       subpaths.map((subpath) => [
