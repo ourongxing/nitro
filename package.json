@@ -1,6 +1,6 @@
 {
   "name": "nitro-go",
-  "version": "0.0.0-beta.1",
+  "version": "0.0.0-beta.2",
   "description": "Build and Deploy Universal JavaScript Servers",
   "repository": "unjs/nitro",
   "license": "MIT",
