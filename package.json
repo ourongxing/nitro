@@ -1,6 +1,6 @@
 {
   "name": "@ourongxing/nitropack",
-  "version": "2.9.6-beta.1",
+  "version": "2.9.6-beta.7",
   "description": "Build and Deploy Universal JavaScript Servers",
   "repository": "unjs/nitro",
   "license": "MIT",
@@ -83,7 +83,6 @@
     "lint": "eslint --cache . && prettier -c .",
     "lint:fix": "eslint --cache --fix . && prettier -w .",
     "nitro": "NODE_OPTIONS=\"--enable-source-maps\" jiti ./src/cli/index.ts",
-    "prepack": "pnpm build",
     "gen-mirror": "pnpm jiti scripts/gen-mirror.ts",
     "gen-presets": "pnpm jiti scripts/gen-presets.ts",
     "release": "pnpm test && pnpm build && changelogen --release && pnpm publish && git push --follow-tags",
@@ -98,6 +97,7 @@
     "undici": "^6.20.0"
   },
   "dependencies": {
+    "nitropack": "link:.",
     "@cloudflare/kv-asset-handler": "^0.3.4",
     "@netlify/functions": "^2.8.2",
     "@rollup/plugin-alias": "^5.1.1",
@@ -130,7 +130,7 @@
     "fs-extra": "^11.2.0",
     "globby": "^14.0.2",
     "gzip-size": "^7.0.0",
-    "h3": "^1.13.0",
+    "h3": "npm:h3-nightly@latest",
     "hookable": "^5.5.3",
     "httpxy": "^0.1.5",
     "ioredis": "^5.4.1",
