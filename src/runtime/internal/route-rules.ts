@@ -68,6 +68,7 @@ export function createRouteRulesHandler(ctx: {
           fetch: ctx.localFetch,
           headers: {
             [goHeader]: "true",
+              ...routeRules.proxy.headers,
           },
           ...routeRules.proxy,
         });
