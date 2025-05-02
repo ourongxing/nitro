@@ -71,6 +71,7 @@ staticwebapp.config.json
 .eslintcache
 playground/firebase.json
 .zeabur
+.apphosting
 
 test/fixture/functions
 .data
@@ -84,4 +85,3 @@ test/fixture/functions
 # Generated types
 *.d.ts
 !runtime-meta.d.ts
-test/fixture/

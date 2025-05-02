@@ -8,7 +8,7 @@ import {
   sendRedirect,
   setHeaders,
 } from "h3";
-import type { NitroRouteRules } from "nitro/types";
+import type { NitroRouteRules } from "nitropack/types";
 import { createRouter as createRadixRouter, toRouteMatcher } from "radix3";
 import { getQuery, joinURL, withQuery, withoutBase } from "ufo";
 import { useRuntimeConfig } from "./config";
@@ -23,7 +23,6 @@ const goHeader = "x-nitro-go"
 export function createRouteRulesHandler(ctx: {
   localFetch: typeof globalThis.fetch;
 }) {
-  // Will merge all rules
   return eventHandler((event) => {
     // Match route options against path
     const routeRules = getRouteRules(event);
@@ -33,45 +32,45 @@ export function createRouteRulesHandler(ctx: {
     }
     const goAhead = !!routeRules.headers?.[goHeader] || getHeader(event, goHeader)
     if (!goAhead) {
-      // Apply redirect options
-      if (routeRules.redirect) {
-        let target = routeRules.redirect.to;
-        if (target.endsWith("/**")) {
-          let targetPath = event.path;
-          const strpBase = (routeRules.redirect as any)._redirectStripBase;
-          if (strpBase) {
-            targetPath = withoutBase(targetPath, strpBase);
-          }
-          target = joinURL(target.slice(0, -3), targetPath);
-        } else if (event.path.includes("?")) {
-          const query = getQuery(event.path);
-          target = withQuery(target, query);
+    // Apply redirect options
+    if (routeRules.redirect) {
+      let target = routeRules.redirect.to;
+      if (target.endsWith("/**")) {
+        let targetPath = event.path;
+        const strpBase = (routeRules.redirect as any)._redirectStripBase;
+        if (strpBase) {
+          targetPath = withoutBase(targetPath, strpBase);
         }
-        appendResponseHeader(event, goHeader, "true");
-        return sendRedirect(event, target, routeRules.redirect.statusCode);
+        target = joinURL(target.slice(0, -3), targetPath);
+      } else if (event.path.includes("?")) {
+        const query = getQuery(event.path);
+        target = withQuery(target, query);
       }
-      // Apply proxy options
-      if (routeRules.proxy) {
-        let target = routeRules.proxy.to;
-        if (target.endsWith("/**")) {
-          let targetPath = event.path;
-          const strpBase = (routeRules.proxy as any)._proxyStripBase;
-          if (strpBase) {
-            targetPath = withoutBase(targetPath, strpBase);
-          }
-          target = joinURL(target.slice(0, -3), targetPath);
-        } else if (event.path.includes("?")) {
-          const query = getQuery(event.path);
-          target = withQuery(target, query);
+        appendResponseHeader(event, goHeader, "true");
+      return sendRedirect(event, target, routeRules.redirect.statusCode);
+    }
+    // Apply proxy options
+    if (routeRules.proxy) {
+      let target = routeRules.proxy.to;
+      if (target.endsWith("/**")) {
+        let targetPath = event.path;
+        const strpBase = (routeRules.proxy as any)._proxyStripBase;
+        if (strpBase) {
+          targetPath = withoutBase(targetPath, strpBase);
         }
-        return proxyRequest(event, target, {
-          fetch: ctx.localFetch,
+        target = joinURL(target.slice(0, -3), targetPath);
+      } else if (event.path.includes("?")) {
+        const query = getQuery(event.path);
+        target = withQuery(target, query);
+      }
+      return proxyRequest(event, target, {
+        fetch: ctx.localFetch,
           headers: {
             [goHeader]: "true",
               ...routeRules.proxy.headers,
           },
-          ...routeRules.proxy,
-        });
+        ...routeRules.proxy,
+      });
       }
     }
   });
@@ -91,8 +90,8 @@ export function getRouteRules(event: H3Event): NitroRouteRules {
 type DeepReadonly<T> = T extends Record<string, any>
   ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
   : T extends Array<infer U>
-  ? ReadonlyArray<DeepReadonly<U>>
-  : T;
+    ? ReadonlyArray<DeepReadonly<U>>
+    : T;
 
 /**
  * @param path - The path to match against route rules. This should not contain a query string.

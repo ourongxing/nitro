@@ -1,4 +1,6 @@
 import { defineNitroPreset } from "nitropack/kit";
+import { normalize } from "pathe";
+import { resolveModulePath } from "exsolve";
 
 const node = defineNitroPreset(
   {
@@ -30,6 +32,23 @@ const nodeCluster = defineNitroPreset(
   {
     extends: "node-server",
     entry: "./runtime/node-cluster",
+    hooks: {
+      "rollup:before"(_nitro, rollupConfig) {
+        const manualChunks = rollupConfig.output?.manualChunks;
+        if (manualChunks && typeof manualChunks === "function") {
+          const serverEntry = resolveModulePath("./runtime/node-server", {
+            from: import.meta.url,
+            extensions: [".mjs", ".ts"],
+          });
+          rollupConfig.output.manualChunks = (id, meta) => {
+            if (id.includes("node-server") && normalize(id) === serverEntry) {
+              return "nitro/node-worker";
+            }
+            return manualChunks(id, meta);
+          };
+        }
+      },
+    },
   },
   {
     name: "node-cluster" as const,

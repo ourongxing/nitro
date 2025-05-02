@@ -1,4 +1,1 @@
-name = "nitro-test"
-
-[site]
-bucket = ".output/public"
+compatibility_flags = [ "nodejs_compat" ]
